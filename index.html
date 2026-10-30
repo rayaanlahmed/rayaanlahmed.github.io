@@ -256,6 +256,8 @@ img{display:block}
 .lightbox{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.86);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;
   padding:calc(env(safe-area-inset-top,0px) + 50px) max(16px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 30px) max(16px,env(safe-area-inset-left,0px));color:#fff;opacity:0;transition:opacity .2s}
 .lightbox.show{opacity:1}
+.lightbox video{max-width:92vw;max-height:72vh;aspect-ratio:9/16;border-radius:12px;background:#000;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.lightbox img[hidden],.lightbox video[hidden]{display:none}
 .lightbox img{max-width:min(92vw,560px);max-height:72vh;border-radius:12px;object-fit:contain;box-shadow:0 20px 60px rgba(0,0,0,.5)}
 .lightbox .cap{text-align:center;font-size:14px}
 .lightbox .cap b{display:block;font-size:16px}
@@ -520,6 +522,7 @@ img{display:block}
   <button class="lb-btn lb-close" id="lbClose" aria-label="Close">✕</button>
   <button class="lb-btn lb-prev" id="lbPrev" aria-label="Previous">‹</button>
   <img id="lbImg" alt="">
+  <video id="lbVid" controls playsinline preload="none" hidden></video>
   <div class="cap" id="lbCap"></div>
   <button class="lb-btn lb-next" id="lbNext" aria-label="Next">›</button>
 </div>
@@ -538,6 +541,9 @@ const TT1='https://www.tiktok.com/@rayaaaaan.aa', TT2='https://www.tiktok.com/@r
 
 /* ---------- data ---------- */
 const PHOTOS=[
+  {poster:'videos/japan-4-dollar-haul.jpg',src:'videos/japan-4-dollar-haul.mp4',t:'What $4 gets you in Japan',s:'Video edit · product photo pop-ups, price cards, captions',k:'edit',d:'0:39'},
+  {poster:'videos/jummah-in-tokyo.jpg',src:'videos/jummah-in-tokyo.mp4',t:'Jummah in Tokyo',s:'Video edit · chapters, info cards, photo dump, captions',k:'edit',d:'1:43'},
+  {poster:'videos/filet-o-fish-taste-test.jpg',src:'videos/filet-o-fish-taste-test.mp4',t:'Filet-O-Fish taste test',s:'UGC edit · cold open hook, punch-ins, captions',k:'edit',d:'0:48'},
   {img:'jetski',t:'Dubai',s:'Jet ski in front of the Burj Al Arab',k:'travel'},
   {img:'tt95',t:'95.2K views',s:'TikTok · @rayaaaaan.aa',k:'tiktok',v:'95.2K'},
   {img:'sunset',t:'Golden hour',s:'Beach sunset shoot',k:'travel'},
@@ -676,10 +682,10 @@ function renderPhotos(root,mode){
   let f='all';
   const draw=()=>{
     const list=PHOTOS.filter(p=>f==='all'||p.k===f);
-    root.innerHTML=`${mode==='page'?'':`<div class="toolbar"><div class="seg" role="group" aria-label="Filter">${[['all','All'],['travel','Travel'],['tiktok','TikToks']].map(([k,l])=>`<button data-f="${k}" aria-pressed="${f===k}">${l}</button>`).join('')}</div><span class="small muted">${list.length} items</span></div>`}
-      <div class="ph-head"><div class="h1">${f==='tiktok'?'Recent TikToks':f==='travel'?'Travel':'Library'}</div><div class="small muted">Tap any photo to see it bigger</div></div>
+    root.innerHTML=`${mode==='page'?'':`<div class="toolbar"><div class="seg" role="group" aria-label="Filter">${[['all','All'],['edit','Edits'],['travel','Travel'],['tiktok','TikToks']].map(([k,l])=>`<button data-f="${k}" aria-pressed="${f===k}">${l}</button>`).join('')}</div><span class="small muted">${list.length} items</span></div>`}
+      <div class="ph-head"><div class="h1">${f==='tiktok'?'Recent TikToks':f==='travel'?'Travel':f==='edit'?'Video edits':'Library'}</div><div class="small muted">${f==='edit'?'Tap a video to play it':'Tap any photo or video to see it bigger'}</div></div>
       ${f!=='tiktok'?`<div class="ph-places">${PLACES.map(p=>`<button data-open="notes" data-sel="places"><img src="${IMG[p.img]}" alt="">${p.t}</button>`).join('')}</div>`:''}
-      <div class="ph-grid">${list.map(p=>`<button class="ph" data-ph="${PHOTOS.indexOf(p)}" aria-label="${p.t}"><img src="${IMG[p.img]}" alt="${p.s}" loading="lazy">${p.v?`<span class="views"><svg viewBox="0 0 12 12"><path d="M3 1.5v9l7.5-4.5z"/></svg>${p.v}</span>`:''}${p.k==='tiktok'?'<span class="tag">TikTok</span>':''}</button>`).join('')}</div>`;
+      <div class="ph-grid">${list.map(p=>`<button class="ph" data-ph="${PHOTOS.indexOf(p)}" aria-label="${p.t}"><img src="${p.poster||IMG[p.img]}" alt="${p.s}" loading="lazy">${p.src?`<span class="views"><svg viewBox="0 0 12 12"><path d="M3 1.5v9l7.5-4.5z"/></svg>${p.d}</span><span class="tag">Edit</span>`:''}${p.v?`<span class="views"><svg viewBox="0 0 12 12"><path d="M3 1.5v9l7.5-4.5z"/></svg>${p.v}</span>`:''}${p.k==='tiktok'?'<span class="tag">TikTok</span>':''}</button>`).join('')}</div>`;
   };
   draw();
   root.onclick=e=>{
@@ -818,8 +824,8 @@ async function copy(txt,fallbackEl,msg){
 }
 let lbList=[],lbI=0;
 function openLightbox(globalIdx,list){lbList=list;lbI=Math.max(0,list.indexOf(PHOTOS[globalIdx]));showLb();const lb=$('#lightbox');lb.hidden=false;requestAnimationFrame(()=>lb.classList.add('show'));$('#lbClose').focus()}
-function showLb(){const p=lbList[lbI];$('#lbImg').src=IMG[p.img];$('#lbImg').alt=p.s;$('#lbCap').innerHTML=`<b>${p.t}</b>${p.s}`}
-function closeLb(){const lb=$('#lightbox');lb.classList.remove('show');setTimeout(()=>lb.hidden=true,200)}
+function showLb(){const p=lbList[lbI],im=$('#lbImg'),vd=$('#lbVid');vd.pause();if(p.src){im.hidden=true;vd.hidden=false;vd.poster=p.poster;vd.src=p.src;vd.play().catch(()=>{})}else{vd.removeAttribute('src');vd.load();vd.hidden=true;im.hidden=false;im.src=IMG[p.img]}im.alt=p.s;$('#lbCap').innerHTML=`<b>${p.t}</b>${p.s}`}
+function closeLb(){const lb=$('#lightbox');$('#lbVid').pause();lb.classList.remove('show');setTimeout(()=>lb.hidden=true,200)}
 $('#lbClose').onclick=closeLb;$('#lbPrev').onclick=()=>{lbI=(lbI-1+lbList.length)%lbList.length;showLb()};$('#lbNext').onclick=()=>{lbI=(lbI+1)%lbList.length;showLb()};
 $('#lightbox').onclick=e=>{if(e.target.id==='lightbox')closeLb()};
 
